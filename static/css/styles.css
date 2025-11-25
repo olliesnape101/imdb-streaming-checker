@@ -1,0 +1,626 @@
+/* ============================================================
+   GLOBAL STYLING
+   ============================================================ */
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 40px;
+    color: #333;
+    line-height: 1.5;
+}
+
+h1, h2 {
+    text-align: center;
+    font-weight: 600;
+    margin-top: 0;
+}
+
+.index-container {
+    width: 95%;
+    max-width: 500px;
+    margin: auto;
+    background: #ffffff;
+    padding: 25px 35px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.instructions-container {
+    width: 95%;
+    max-width: 1200px;
+    margin: auto;
+    background: #ffffff;
+    padding: 25px 35px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Reduce spacing BETWEEN the heading and the select all/deselect all links */
+.index-container h3 {
+    margin-bottom: 4px;   /* or 0px if you want them touching */
+}
+
+.results-container {
+    width: 95%;
+    margin: auto;
+    background: #ffffff;
+    padding: 25px 35px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Error messages */
+.error-message {
+    margin-top: 6px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    color: #b00020;
+    background: #fdecea;
+    border-radius: 4px;
+    display: none;
+}
+
+.error-message.visible {
+    display: inline-block;
+}
+
+
+/* ============================================================
+   TABLE STYLING
+   ============================================================ */
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: max-content;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 7px 10px;
+    vertical-align: top;
+    font-size: 0.92rem;
+}
+
+/* Header — allow wrapping */
+th {
+    background-color: #f0f2f5;
+    font-weight: bold;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Zebra rows */
+tr:nth-child(even) td {
+    background: #f7f9fb;
+}
+
+/* Title + Directors columns (same behaviour) */
+.title-col,
+.director-col {
+    width: 120px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Genres column */
+.genre-col {
+    width: 150px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Centered numeric columns */
+.center-col {
+    text-align: center;
+}
+
+/* Providers column */
+.provider-cell {
+    white-space: normal;
+    line-height: 1.15;
+    padding: 4px 8px;
+}
+
+td * {
+    margin: 0;
+    padding: 0;
+}
+
+
+/* ============================================================
+   LINKS & BUTTONS
+   ============================================================ */
+
+a {
+    color: #4A90E2;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Back button styled like scroll buttons, bottom-left */
+.fixed-back {
+    position: fixed;
+    left: 20px;
+    right: auto;          /* override scroll-btn right */
+    bottom: 20px;
+    z-index: 1000;
+
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 20px;
+    border: none;
+    background: #4A90E2;
+    color: #fff;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.fixed-back:hover {
+    background: #3c78c4;
+}
+
+/* Generic button */
+.btn {
+    padding: 10px 16px;
+    background: #4A90E2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn:hover {
+    background: #3c78c4;
+}
+
+
+/* ============================================================
+   FILTER PANEL
+   ============================================================ */
+
+.filter-bar {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.filter-btn {
+    white-space: normal;      /* allow wrapping */
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    min-height: 3.2em;        /* forces both buttons to be tall enough for 2 lines */
+    padding: 10px 16px;
+}
+
+.filter-panel {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 0;
+    padding: 0 20px;
+    transition: all 0.35s ease;
+    margin-bottom: 25px;
+}
+
+.filter-panel.open {
+    max-height: 3000px;
+    padding: 20px;
+}
+
+/* "Filter by:" left, global links right */
+.filter-heading {
+    margin-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-global-links a {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Grey pipe between global links */
+.filter-global-links .pipe {
+    color: #777;
+    margin: 0 2px;
+}
+
+
+/* ============================================================
+   FILTER SECTIONS
+   ============================================================ */
+
+.filter-section {
+    margin-bottom: 22px;
+}
+
+/* Heading row + inline buttons */
+.filter-section h3 {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;   /* small-medium gap */
+    margin-bottom: 10px;
+}
+
+/* Inline links next to Type / Genres / Platforms */
+.filter-inline-links {
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+/* "Select all | Deselect all" links */
+.small-link {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #4A90E2;
+}
+
+.small-link:hover {
+    text-decoration: underline;
+}
+
+/* Grey pipes between these links */
+.pipe {
+    color: #777;
+    margin: 0 2px;
+}
+
+/* ----- PLATFORM-SPECIFIC LINKS ----- */
+
+/* If not in a list */
+
+.platform-specific-controls {
+    margin-top: -10px;   /* Reduce spacing between Platforms header and first line */
+}
+
+.platform-specific-controls a {
+    display: inline-block;
+    margin: 2px 0;     /* Increase spacing between each line */
+}
+
+
+/* ============================================================
+   CHECKBOXES
+   ============================================================ */
+
+.filter-checkbox {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.95rem;
+}
+
+.filter-checkbox input {
+    margin-right: 6px;
+}
+
+.filter-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+}
+
+
+/* ============================================================
+   YEAR / SCORE / RUNTIME INPUTS
+   ============================================================ */
+
+.year-input {
+    width: 140px;
+    padding: 6px;
+    margin-left: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#filter-year label,
+#filter-rating label,
+#filter-runtime label {
+    margin-right: 25px;
+}
+
+
+/* ============================================================
+   REGION FILTER BOXES (GB, US, etc.)
+   ============================================================ */
+
+.filter-region {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 12px 14px;
+    width: 100%;
+    background: #fafafa;
+}
+
+.filter-region h4 {
+    margin: 0 0 6px 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+/* SNA checkbox row */
+.sna-row {
+    display: block;
+    margin: 6px 0 10px 0;
+}
+
+/* Region-level "Select all | Deselect all" row */
+.region-links {
+    margin-bottom: 5px;   /* extra whitespace before tickboxes */
+    font-size: 0.9rem;
+}
+
+
+/* Grey-out when SNA active */
+.filter-region.sna-active {
+    background: #f2f2f2;
+}
+
+.filter-region.sna-active .platform-group {
+    opacity: 0.35;
+}
+
+.filter-region.sna-active .platform-group input {
+    cursor: not-allowed;
+}
+
+
+/* ============================================================
+   PLATFORM GROUP (HORIZONTAL WRAPPING)
+   ============================================================ */
+
+.platform-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-top: 5px;
+}
+
+.platform-group label {
+    display: inline-flex;
+    align-items: center;
+}
+
+
+/* ============================================================
+   RESULTS COUNT + SORT ROW
+   ============================================================ */
+
+.results-instructions {
+    text-align: center;
+    font-size: 1.05em;
+    margin-bottom: 12px;
+}
+
+.results-count {
+    text-align: center;
+    font-size: 1.05em;
+    margin-bottom: 12px;
+}
+
+.sort-and-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.sort-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.sort-row select {
+    padding: 5px 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+}
+
+.results-summary {
+    font-size: 0.95rem;
+}
+
+.bottom-controls {
+    text-align: center;
+    margin-top: 25px;
+}
+
+
+/* ============================================================
+   SCROLL BUTTONS (BOTTOM-RIGHT)
+   ============================================================ */
+
+.scroll-btn {
+    position: fixed;
+    right: 20px;
+    padding: 7px 12px;
+    border-radius: 20px;
+    border: none;
+    background: #4A90E2;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    z-index: 999;
+}
+
+.scroll-btn:hover {
+    background: #3c78c4;
+}
+
+.scroll-top {
+    bottom: 60px;
+}
+
+.scroll-bottom {
+    bottom: 20px;
+}
+
+
+/* ============================================================
+   FILE TABLE (INDEX PAGE)
+   ============================================================ */
+
+.file-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.file-table th,
+.file-table td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Center the select/delete columns on index page */
+.file-table td:first-child,
+.file-table td:last-child {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.delete-icon {
+    color: red;
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+.delete-icon:hover {
+    opacity: 0.7;
+}
+
+/* ============================================================
+   REFRESH PROMPT (INDEX PAGE)
+   ============================================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-box {
+    background: white;
+    padding: 25px 30px;
+    border-radius: 10px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-align: center;
+}
+
+.modal-summary {
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.modal-btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.grey-btn {
+    background: #ccc;
+    color: #333;
+}
+
+.grey-btn:hover {
+    background: #b3b3b3;
+}
+
+.blue-btn {
+    background: #4A90E2;
+    color: white;
+}
+
+.blue-btn:hover {
+    background: #3c78c4;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+    body {
+        padding: 20px;
+    }
+
+    .container {
+        padding: 18px;
+    }
+
+    th, td {
+        font-size: 0.85rem;
+        padding: 5px 6px;
+    }
+
+    .title-col,
+    .director-col {
+        width: 110px;
+    }
+
+    .genre-col {
+        width: 120px;
+    }
+
+    .filter-region {
+        padding: 10px;
+    }
+
+    .platform-group {
+        gap: 8px 12px;
+    }
+
+    .sort-and-summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+

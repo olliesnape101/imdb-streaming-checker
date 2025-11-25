@@ -1,0 +1,24 @@
+# === Secrets ===
+.env
+
+# === Python ===
+__pycache__/
+*.pyc
+
+# === Local data (should never be committed) ===
+cache/
+uploads/
+*.db   # Your SQLite database
+
+# === Flask / VS Code / CS50 artifacts ===
+instance/
+*.sqlite
+.vscode/
+.DS_Store
+
+# === Logs ===
+*.log
+
+# === Python virtual environments ===
+venv/
+.env/

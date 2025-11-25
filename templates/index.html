@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload IMDb CSV</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <style>
+        /* =======================
+           CUSTOM MODAL
+        ======================= */
+        #refresh-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #refresh-modal {
+            background: #fff;
+            padding: 22px 28px;
+            border-radius: 10px;
+            width: 420px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        #refresh-modal h2 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+            text-align: center;
+        }
+
+        #refresh-modal pre {
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-btn-refresh {
+            background: #4A90E2;
+            color: white;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .modal-btn-refresh:hover {
+            background: #3c78c4;
+        }
+
+        .modal-btn-saved {
+            background: #e0e0e0;
+            color: #333;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .modal-btn-saved:hover {
+            background: #cfcfcf;
+        }
+    </style>
+
+    <script>
+        // Simple region select-all / deselect-all for index page
+        window.addEventListener("DOMContentLoaded", () => {
+            const regionCheckboxes = document.querySelectorAll(".region-box");
+            const selectAllLink = document.getElementById("regions-select");
+            const deselectAllLink = document.getElementById("regions-deselect");
+
+            selectAllLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                regionCheckboxes.forEach(cb => cb.checked = true);
+            });
+
+            deselectAllLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                regionCheckboxes.forEach(cb => cb.checked = false);
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div class="index-container">
+
+    <h1>Check Streaming Platforms From IMDb Lists</h1>
+
+    <p>
+    This site takes <a href="https://www.imdb.com/" target="_blank">IMDb</a> film/TV show lists, exported as CSV files, and shows which streaming platforms each item is available on (based on <a href="https://www.themoviedb.org/" target="_blank">TMDB</a> data).
+    <br><br>
+    <i>For instructions on how to export IMDb lists as CSV files, see
+    <a href="/instructions">here</a>.</i>
+    </p>
+
+
+    <form action="/process" method="post" enctype="multipart/form-data">
+
+        <h3>Upload a new IMDb CSV file:</h3>
+        <input type="file" id="file-input" name="file">
+
+        <div id="uploaded-file-option" style="display:none; margin-top:10px;">
+            <label>
+                <input type="radio" name="existing_file" id="uploaded-file-radio" value="">
+                Use uploaded file: <span id="uploaded-file-name"></span>
+            </label>
+        </div>
+
+        <h3>Or select a previously uploaded file:</h3>
+
+        {% if existing_files|length == 0 %}
+            <p>No uploaded files yet.</p>
+        {% else %}
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th class="center-col">Select</th>
+                    <th>Filename</th>
+                    <th class="center-col">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for filename in existing_files %}
+                <tr>
+                    <td class="center-col">
+                        <input type="radio" name="existing_file" value="{{ filename }}">
+                    </td>
+                    <td>{{ filename }}</td>
+                    <td class="center-col">
+                        <a href="#" class="delete-icon"
+                           data-filename="{{ filename }}"
+                           onclick="return false;">🗑</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if show_delete_all %}
+        <button id="delete-all-btn" class="btn" style="background:#d9534f;">
+            Delete ALL uploaded CSVs & data
+        </button>
+        {% endif %}
+
+        <h3>Select Regions:</h3>
+        <div class="region-links">
+            <a href="#" id="regions-select" class="small-link">Select all</a>
+            <span class="pipe">|</span>
+            <a href="#" id="regions-deselect" class="small-link">Deselect all</a>
+        </div>
+
+        {% for code, name in {
+            "GB": "United Kingdom",
+            "US": "United States",
+            "CA": "Canada",
+            "AU": "Australia",
+            "DE": "Germany",
+            "FR": "France",
+            "ES": "Spain",
+            "IT": "Italy"
+        }.items() %}
+            <label><input type="checkbox" class="region-box" name="regions" value="{{ code }}"> {{ name }} ({{ code }})</label><br>
+        {% endfor %}
+
+        <br>
+
+        <!-- Hidden field to carry refresh decision to the backend -->
+        <input type="hidden" name="refresh_mode" id="refresh_mode" value="auto">
+        <input type="hidden" name="selected_source" id="selected_source" value="existing">
+
+        <input type="submit" value="Submit" class="btn">
+        <div id="index-error" class="error-message"></div>
+
+    </form>
+</div>
+
+<!-- ======================
+     CUSTOM MODAL HTML
+====================== -->
+
+<div id="refresh-modal-overlay">
+    <div id="refresh-modal">
+        <h2>Refresh Platform Data?</h2>
+        <pre id="refresh-modal-text"></pre>
+
+        <div class="modal-buttons">
+            <button class="modal-btn-saved" id="modal-use-saved">Use saved</button>
+            <button class="modal-btn-refresh" id="modal-refresh">Refresh regions</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle file upload → show radio option
+document.getElementById("file-input").addEventListener("change", function () {
+    const file = this.files[0];
+
+    if (file) {
+        const optionDiv = document.getElementById("uploaded-file-option");
+        const radio = document.getElementById("uploaded-file-radio");
+        const nameSpan = document.getElementById("uploaded-file-name");
+
+        nameSpan.textContent = file.name;
+        radio.value = file.name;
+
+        radio.checked = true;
+        optionDiv.style.display = "block";
+        document.getElementById("selected_source").value = "uploaded";
+    }
+});
+</script>
+
+
+<!-- ======================
+     INDIVIDUAL FILES DELETION LOGIC
+====================== -->
+
+<script>
+// Delete icons (AJAX DELETE, no page refresh)
+document.querySelectorAll('.delete-icon').forEach(icon => {
+    icon.addEventListener('click', async function() {
+        const filename = this.dataset.filename;
+
+        if (!confirm(`Delete ${filename} and all associated files permanently?`)) return;
+
+        const response = await fetch(`/delete/${filename}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            const row = this.closest('tr');
+            const tbody = row.parentElement;
+
+            row.remove();
+
+            // After removal, check if ANY rows remain
+            if (tbody.querySelectorAll('tr').length === 0) {
+
+                // Remove the entire table
+                const table = tbody.closest("table");
+                table.remove();
+
+                // Insert "No uploaded files yet." message
+                const msg = document.createElement("p");
+                msg.textContent = "No uploaded files yet.";
+                msg.style.marginTop = "16px";
+
+                // Insert message exactly where table used to be
+                const form = document.querySelector("form");
+                const h3 = Array.from(form.querySelectorAll("h3"))
+                                .find(h => h.textContent.includes("previously uploaded"));
+
+                h3.insertAdjacentElement("afterend", msg);
+                document.getElementById("delete-all-btn")?.style.setProperty("display", "none");
+            }
+        } else {
+            alert("Error deleting file.");
+        }
+
+    });
+});
+</script>
+
+<script>
+document.querySelectorAll('input[name="existing_file"]').forEach(r => {
+    r.addEventListener('change', () => {
+        if (r.id === "uploaded-file-radio") {
+            document.getElementById("selected_source").value = "uploaded";
+        } else {
+            document.getElementById("selected_source").value = "existing";
+        }
+    });
+});
+</script>
+
+<!-- ======================
+     DELETE ALL FILES LOGIC
+====================== -->
+
+<script>
+// Delete ALL button → simple confirm, then call backend
+document.getElementById("delete-all-btn").addEventListener("click", async function (e) {
+    e.preventDefault();
+
+    if (!confirm("Delete ALL uploaded CSV files, metadata, and cached data permanently?")) {
+        return;
+    }
+
+    const response = await fetch("/delete_all", { method: "DELETE" });
+
+    if (response.ok) {
+        // Remove file table and show "No uploaded files" message
+        const table = document.querySelector(".file-table");
+        if (table) table.remove();
+
+        const msg = document.createElement("p");
+        msg.textContent = "No uploaded files yet.";
+        msg.style.marginTop = "16px";
+
+        const form = document.querySelector("form");
+        const h3 = Array.from(form.querySelectorAll("h3"))
+                        .find(h => h.textContent.includes("previously uploaded"));
+        h3.insertAdjacentElement("afterend", msg);
+
+        // 🔥 Hide Delete-All button immediately
+        document.getElementById("delete-all-btn").style.display = "none";
+    } else {
+        alert("Error deleting all data.");
+    }
+});
+</script>
+
+<!-- ======================
+     MAIN SUBMIT BUTTON LOGIC
+====================== -->
+
+<script>
+document.querySelector("form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const form = this;
+    const fileInput = document.getElementById("file-input");
+    const regionBoxes = document.querySelectorAll('.region-box');
+    const errorBox = document.getElementById("index-error");
+    const refreshModeInput = document.getElementById("refresh_mode");
+
+    const selectedRadio = document.querySelector('input[name="existing_file"]:checked');
+
+    // Basic region & file validation
+    const regionSelected = Array.from(regionBoxes).some(cb => cb.checked);
+    const hasFileChosen = !!selectedRadio;
+
+    if (!hasFileChosen || !regionSelected) {
+        errorBox.textContent = "Please select a file and region.";
+        errorBox.classList.add("visible");
+        return;
+    }
+    errorBox.classList.remove("visible");
+
+    // Detect if newly uploaded file radio is selected
+    let isNewUploadSelected = false;
+    let uploadedName = null;
+
+    if (fileInput.files.length > 0) {
+        uploadedName = fileInput.files[0].name;
+        isNewUploadSelected = (document.getElementById("selected_source").value === "uploaded");
+    }
+
+    // If new upload selected, check for filename conflict BEFORE submitting
+    if (isNewUploadSelected) {
+
+        // Does a file with this name already exist in the table?
+        const existingFilenames = Array.from(
+            document.querySelectorAll(".file-table tbody tr td:nth-child(2)")
+        ).map(td => td.textContent.trim());
+
+        const nameExistsAlready = existingFilenames.includes(uploadedName);
+
+        if (nameExistsAlready) {
+            const ok = confirm(
+                `${uploadedName} already exists.\n\n` +
+                `Override the existing watchlist and refresh platform data?`
+            );
+            if (!ok) {
+                // user cancelled → block submission
+                return;
+            }
+        }
+
+        // user accepted overriding OR there was no conflict
+        refreshModeInput.value = "auto";
+        form.submit();
+        return;
+    }
+
+    // Existing file → need stored metadata from backend
+    const filename = selectedRadio.value;
+    const regions = Array.from(regionBoxes).filter(cb => cb.checked).map(cb => cb.value);
+
+    const resp = await fetch("/watchlist_info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, regions })
+    });
+
+    if (!resp.ok) {
+        refreshModeInput.value = "refresh";
+        form.submit();
+        return;
+    }
+
+    const data = await resp.json();
+    const info = data.regions || {};
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let modalLines = [];
+    let allAlreadyUpToDateOrMissing = true;
+
+    for (const r of regions) {
+        if (!info[r] || info[r].status === "no_data") {
+            modalLines.push(`${r}: No stored data (fetches regardless)`);
+            // This region MUST be fetched regardless → still qualifies as "auto-run"
+        } else if (info[r].date === todayStr) {
+            modalLines.push(`${r}: Last saved today; no need to refresh`);
+        } else {
+            modalLines.push(`${r}: Last saved ${info[r].date}`);
+            allAlreadyUpToDateOrMissing = false;
+        }
+    }
+
+    // If ALL selected regions are either up-to-date or missing → no need to show modal
+    if (allAlreadyUpToDateOrMissing) {
+        refreshModeInput.value = "refresh";
+        form.submit();
+        return;
+    }
+
+    // Otherwise → show modal
+    document.getElementById("refresh-modal-text").textContent = modalLines.join("\n");
+    const overlay = document.getElementById("refresh-modal-overlay");
+    overlay.style.display = "flex";
+
+    // Button: use saved
+    document.getElementById("modal-use-saved").onclick = () => {
+        refreshModeInput.value = "use_saved";
+        overlay.style.display = "none";
+        form.submit();
+    };
+
+    // Button: refresh
+    document.getElementById("modal-refresh").onclick = () => {
+        refreshModeInput.value = "refresh";
+        overlay.style.display = "none";
+        form.submit();
+    };
+});
+</script>
+
+<!-- ======================
+     RADIO SELECTOR FILE SELECTION LOGIC
+====================== -->
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+    const fileInput = document.getElementById("file-input");
+    const file = fileInput.files[0];
+
+    if (file) {
+        const optionDiv = document.getElementById("uploaded-file-option");
+        const radio = document.getElementById("uploaded-file-radio");
+        const nameSpan = document.getElementById("uploaded-file-name");
+
+        nameSpan.textContent = file.name;
+        radio.value = file.name;
+        optionDiv.style.display = "block";
+    }
+});
+</script>
+
+<p style="text-align:center; color:#777; font-size:0.8rem; margin-top:40px;">
+    This site is not endorsed by, and has no affiliation with, either IMDb or TMDB.
+</p>
+
+</body>
+</html>

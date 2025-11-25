@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Streaming Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+<!-- Fixed back button (bottom-left) -->
+<a href="/" class="back-link fixed-back">← Back</a>
+
+<div class="results-container">
+
+    <h1>Streaming Availability</h1>
+
+    <p class="results-instructions">
+        <i>
+            Some of the watchlist entries may not be available on any platforms in any selected regions. To see these, tick the <b>Only show titles not available here</b> filter for all regions.
+            <br><br>To search for a specific entry (with selected filters applied), simply use <strong>Ctrl+F</strong> in your browser.
+        </i>
+    </p>
+
+    <!-- Top summary of list size -->
+    <p class="results-count">
+        {{ filename }}, with {{ results|length }} total titles
+    </p>
+
+    <!-- FILTER BUTTONS -->
+    <div class="filter-bar">
+        <button id="attributes-toggle" class="btn filter-btn">Filter by attributes</button>
+        <button id="platforms-toggle" class="btn filter-btn">Filter by streaming platforms</button>
+    </div>
+
+    <!-- ==== ATTRIBUTES FILTER PANEL ==== -->
+    <div id="attributes-panel" class="filter-panel closed">
+
+        <h2 class="filter-heading">
+            <span>Filter by attributes:</span>
+            <span class="filter-global-links">
+                <a href="#" id="global-select-attributes" class="small-link">Select all filters</a>
+                <span class="pipe">|</span>
+                <a href="#" id="global-clear-attributes" class="small-link">Clear all filters</a>
+            </span>
+        </h2>
+
+        <!-- RATING FILTER (IMDb Rating) -->
+        <div class="filter-section">
+            <h3>IMDb rating (inclusive)</h3>
+            <div class="filter-content" id="filter-rating">
+                <label>
+                    Min score:
+                    <input type="number" step="0.1" min="0" max="10"
+                           id="score-min" class="year-input" placeholder="e.g. 6.5">
+                </label>
+
+                <label>
+                    Max score:
+                    <input type="number" step="0.1" min="0" max="10"
+                           id="score-max" class="year-input" placeholder="e.g. 9.2">
+                </label>
+
+                <a href="#" id="clear-score" class="small-link">Clear score filter</a>
+            </div>
+            <div id="score-error" class="error-message"></div>
+        </div>
+
+        <!-- TYPE FILTER -->
+        <div class="filter-section">
+            <h3>
+                Type
+                <span class="filter-inline-links">
+                    <a href="#" id="type-select" class="small-link">Select all</a>
+                    <span class="pipe">|</span>
+                    <a href="#" id="type-deselect" class="small-link">Deselect all</a>
+                </span>
+            </h3>
+            <div class="filter-content" id="filter-type">
+                {% set types = results | map(attribute='type') | list | unique %}
+                {% for t in types %}
+                <label class="filter-checkbox">
+                    <input type="checkbox" class="type-filter" value="{{ t }}" checked>
+                    {{ t }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- YEAR FILTER -->
+        <div class="filter-section">
+            <h3>Year released (inclusive)</h3>
+            <div class="filter-content" id="filter-year">
+                <label>
+                    Released after:
+                    <input type="number" id="year-min" class="year-input" placeholder="e.g. 1990">
+                </label>
+
+                <label>
+                    Released before:
+                    <input type="number" id="year-max" class="year-input" placeholder="e.g. 2020">
+                </label>
+
+                <a href="#" id="clear-year" class="small-link">Clear date filter</a>
+            </div>
+            <div id="year-error" class="error-message"></div>
+        </div>
+
+        <!-- GENRES FILTER -->
+        <div class="filter-section">
+            <h3>
+                Genres
+                <span class="filter-inline-links">
+                    <a href="#" id="genre-select" class="small-link">Select all</a>
+                    <span class="pipe">|</span>
+                    <a href="#" id="genre-deselect" class="small-link">Deselect all</a>
+                </span>
+            </h3>
+            <div class="filter-content" id="filter-genres">
+                {% set all_genres = [] %}
+                {% for item in results %}
+                    {% for g in item.genres %}
+                        {% if g not in all_genres %}
+                            {% set _ = all_genres.append(g) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+
+                {% for genre in all_genres | sort %}
+                <label class="filter-checkbox">
+                    <input type="checkbox" class="genre-filter" value="{{ genre }}" checked>
+                    {{ genre }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- RUNTIME FILTER -->
+        <div class="filter-section">
+            <h3>Runtime (minutes, inclusive)</h3>
+            <div class="filter-content" id="filter-runtime">
+                <label>
+                    Min runtime:
+                    <input type="number" id="runtime-min" class="year-input" placeholder="e.g. 60">
+                </label>
+
+                <label>
+                    Max runtime:
+                    <input type="number" id="runtime-max" class="year-input" placeholder="e.g. 180">
+                </label>
+
+                <a href="#" id="clear-runtime" class="small-link">Clear runtime filter</a>
+            </div>
+            <div id="runtime-error" class="error-message"></div>
+        </div>
+
+    </div> <!-- end attributes-panel -->
+
+
+    <!-- ==== PLATFORMS FILTER PANEL ==== -->
+    <div id="platforms-panel" class="filter-panel closed">
+
+        <h2 class="filter-heading">
+            <span>Filter by streaming platforms:</span>
+            <span class="filter-global-links">
+                <a href="#" id="global-select-platforms" class="small-link">Select all filters</a>
+                <span class="pipe">|</span>
+                <a href="#" id="global-clear-platforms" class="small-link">Clear all filters</a>
+            </span>
+        </h2>
+
+        <!-- PLATFORMS FILTER -->
+        <div class="filter-section">
+            <h3>
+                Platforms
+                <span class="filter-inline-links">
+                    <a href="#" id="platforms-select" class="small-link">Select all</a>
+                    <span class="pipe">|</span>
+                    <a href="#" id="platforms-deselect" class="small-link">Deselect all</a>
+                </span>
+            </h3>
+
+            <!-- Per-platform global controls -->
+            <div class="platform-specific-controls">
+                <ul>
+                    <li><div class="filter-inline-links">
+                        <a href="#" id="platforms-netflix-select" class="small-link">Select all Netflix</a>
+                        <span class="pipe">|</span>
+                        <a href="#" id="platforms-netflix-deselect" class="small-link">Deselect all Netflix</a>
+                    </div></li>
+
+                    <li><div class="filter-inline-links">
+                        <a href="#" id="platforms-amazon-select" class="small-link">Select all Amazon Prime</a>
+                        <span class="pipe">|</span>
+                        <a href="#" id="platforms-amazon-deselect" class="small-link">Deselect all Amazon Prime</a>
+                    </div></li>
+
+                    <li><div class="filter-inline-links">
+                        <a href="#" id="platforms-disney-select" class="small-link">Select all Disney Plus</a>
+                        <span class="pipe">|</span>
+                        <a href="#" id="platforms-disney-deselect" class="small-link">Deselect all Disney Plus</a>
+                    </div></li>
+
+                    <li><div class="filter-inline-links">
+                        <a href="#" id="platforms-paramount-select" class="small-link">Select all Paramount Plus</a>
+                        <span class="pipe">|</span>
+                        <a href="#" id="platforms-paramount-deselect" class="small-link">Deselect all Paramount Plus</a>
+                    </div></li>
+
+                    <li><div class="filter-inline-links">
+                        <a href="#" id="platforms-mubi-select" class="small-link">Select all MUBI</a>
+                        <span class="pipe">|</span>
+                        <a href="#" id="platforms-mubi-deselect" class="small-link">Deselect all MUBI</a>
+                    </div></li>
+                </ul>
+            </div>
+
+            <div class="filter-content" id="filter-platforms">
+                {% for region in regions %}
+                <div class="filter-region" data-region="{{ region }}">
+                    <h4>{{ region }}</h4>
+
+                    <!-- SNA checkbox -->
+                    <label class="filter-checkbox sna-row">
+                        <input type="checkbox"
+                               class="sna-toggle"
+                               data-region="{{ region }}">
+                        Only show titles not available here
+                    </label>
+
+                    <!-- Region select/deselect links -->
+                    <div class="region-links">
+                        <a href="#"
+                           class="platform-region-select small-link"
+                           data-region="{{ region }}">
+                            Select all
+                        </a>
+                        <span class="pipe">|</span>
+                        <a href="#"
+                           class="platform-region-deselect small-link"
+                           data-region="{{ region }}">
+                            Deselect all
+                        </a>
+                    </div>
+
+                    <!-- Platforms group (horizontal, wrapping) -->
+                    <div class="platform-group">
+
+                        {% set providers = [] %}
+                        {% for item in results %}
+                            {% for p in item.providers[region] %}
+                                {% if p not in providers %}
+                                    {% set _ = providers.append(p) %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+
+                        {% for p in providers | sort %}
+                        <label class="filter-checkbox">
+                            <input type="checkbox"
+                                   class="platform-filter"
+                                   data-region="{{ region }}"
+                                   value="{{ p }}"
+                                   checked>
+                            {{ p }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div> <!-- end PLATFORMS filter-section -->
+
+    </div> <!-- end platforms-panel -->
+    <!-- Sort + top “showing” summary (always visible) -->
+    <div class="sort-and-summary-row">
+        <div class="sort-row">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select">
+                <option value="added-asc" selected>Recently added (least recent first)</option>
+                <option value="added-desc">Recently added (most recent first)</option>
+                <option value="rating-desc">IMDb rating (highest first)</option>
+                <option value="rating-asc">IMDb rating (lowest first)</option>
+                <option value="year-desc">Year released (most recent first)</option>
+                <option value="year-asc">Year released (least recent first)</option>
+                <option value="runtime-asc">Runtime (shortest first)</option>
+                <option value="runtime-desc">Runtime (longest first)</option>
+            </select>
+        </div>
+
+        <p class="results-summary top-summary">
+            Showing <span id="visible-count-top"></span> of {{ results|length }} titles
+        </p>
+    </div>
+
+    <!-- ==== RESULTS TABLE ==== -->
+    <div class="table-container">
+        <table id="results-table">
+
+            <thead>
+            <tr>
+                <th class="center-col">First<br>Added</th>
+                <th class="title-col">Title</th>
+                <th>Type</th>
+                <th>Year</th>
+                <th class="genre-col">Genres</th>
+                <th class="center-col">IMDb<br>Rating</th>
+                <th class="center-col">Runtime<br>(mins)</th>
+                <th class="director-col">Directors</th>
+                {% for region in regions %}
+                    <th>{{ region }}<br>Availability</th>
+                {% endfor %}
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for item in results %}
+            <tr class="result-row"
+                data-type="{{ item.type }}"
+                data-year="{{ item.year }}"
+                data-genres="{{ item.genres | join(',') }}"
+                data-rating="{{ item.rating }}"
+                data-runtime="{{ item.runtime }}"
+                data-added="{{ loop.index }}"
+                {% for region in regions %}
+                    data-platforms-{{ region }}="{{ item.providers[region] | join(',') }}"
+                {% endfor %}
+            >
+                <td class="center-col">{{ loop.index }}</td>
+                <td class="title-col">{{ item.title }}</td>
+                <td>{{ item.type }}</td>
+                <td>{{ item.year }}</td>
+                <td class="genre-col">{{ item.genres | join(', ') }}</td>
+                <td class="center-col">{{ "%.1f"|format(item.rating) if item.rating is not none else "" }}</td>
+                <td class="center-col">{{ item.runtime if item.runtime is not none else "" }}</td>
+                <td class="director-col">{{ item.directors }}</td>
+
+                {% for region in regions %}
+                <td class="provider-cell">
+                    {% if item.providers[region] %}
+                        {% for p in item.providers[region] %}
+                            {{ p }}{% if not loop.last %}<br>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        Not available
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+    <!-- Bottom “showing” summary -->
+    <div class="bottom-controls">
+        <p class="results-summary bottom-summary">
+            Showing <span id="visible-count-bottom"></span> of {{ results|length }} titles
+        </p>
+    </div>
+
+</div>
+
+<!-- Scroll buttons bottom-right -->
+<button id="scroll-top" class="scroll-btn scroll-top">↑ Top</button>
+<button id="scroll-bottom" class="scroll-btn scroll-bottom">↓ Bottom</button>
+
+<script>
+/* ========= BASIC REFERENCES ========= */
+
+const rows = Array.from(document.querySelectorAll(".result-row"));
+const total = rows.length;
+
+const visibleTop = document.getElementById("visible-count-top");
+const visibleBottom = document.getElementById("visible-count-bottom");
+
+/* New: two filter panels */
+const attributesToggle = document.getElementById("attributes-toggle");
+const platformsToggle  = document.getElementById("platforms-toggle");
+const attributesPanel  = document.getElementById("attributes-panel");
+const platformsPanel   = document.getElementById("platforms-panel");
+
+const typeCheckboxes = Array.from(document.querySelectorAll(".type-filter"));
+const genreCheckboxes = Array.from(document.querySelectorAll(".genre-filter"));
+const platformCheckboxes = Array.from(document.querySelectorAll(".platform-filter"));
+const snaCheckboxes = Array.from(document.querySelectorAll(".sna-toggle"));
+
+const yearMinInput = document.getElementById("year-min");
+const yearMaxInput = document.getElementById("year-max");
+const yearError = document.getElementById("year-error");
+
+const scoreMinInput = document.getElementById("score-min");
+const scoreMaxInput = document.getElementById("score-max");
+const scoreError = document.getElementById("score-error");
+
+const runtimeMinInput = document.getElementById("runtime-min");
+const runtimeMaxInput = document.getElementById("runtime-max");
+const runtimeError = document.getElementById("runtime-error");
+
+const clearYearLink = document.getElementById("clear-year");
+const clearScoreLink = document.getElementById("clear-score");
+const clearRuntimeLink = document.getElementById("clear-runtime");
+
+/* NEW: global select/clear links (per panel) */
+const globalSelectAttributesLink = document.getElementById("global-select-attributes");
+const globalClearAttributesLink  = document.getElementById("global-clear-attributes");
+const globalSelectPlatformsLink  = document.getElementById("global-select-platforms");
+const globalClearPlatformsLink   = document.getElementById("global-clear-platforms");
+
+/* NEW: section-level links */
+const typeSelectLink   = document.getElementById("type-select");
+const typeDeselectLink = document.getElementById("type-deselect");
+
+const genreSelectLink   = document.getElementById("genre-select");
+const genreDeselectLink = document.getElementById("genre-deselect");
+
+const platformsSelectLink   = document.getElementById("platforms-select");
+const platformsDeselectLink = document.getElementById("platforms-deselect");
+
+/* NEW: per-platform global links */
+const netflixSelectLink    = document.getElementById("platforms-netflix-select");
+const netflixDeselectLink  = document.getElementById("platforms-netflix-deselect");
+
+const amazonSelectLink     = document.getElementById("platforms-amazon-select");
+const amazonDeselectLink   = document.getElementById("platforms-amazon-deselect");
+
+const disneySelectLink     = document.getElementById("platforms-disney-select");
+const disneyDeselectLink   = document.getElementById("platforms-disney-deselect");
+
+const paramountSelectLink  = document.getElementById("platforms-paramount-select");
+const paramountDeselectLink= document.getElementById("platforms-paramount-deselect");
+
+const mubiSelectLink       = document.getElementById("platforms-mubi-select");
+const mubiDeselectLink     = document.getElementById("platforms-mubi-deselect");
+
+/* NEW: region-level links */
+const regionSelectLinks   = Array.from(document.querySelectorAll(".platform-region-select"));
+const regionDeselectLinks = Array.from(document.querySelectorAll(".platform-region-deselect"));
+
+const sortSelect = document.getElementById("sort-select");
+const tbody = document.querySelector("#results-table tbody");
+
+const scrollTopBtn = document.getElementById("scroll-top");
+const scrollBottomBtn = document.getElementById("scroll-bottom");
+
+const regions = {{ regions | tojson }};
+
+
+/* ========= PANEL TOGGLE (two buttons, two panels) ========= */
+
+function openAttributesPanel() {
+    attributesPanel.classList.remove("closed");
+    attributesPanel.classList.add("open");
+
+    platformsPanel.classList.remove("open");
+    platformsPanel.classList.add("closed");
+
+    attributesToggle.textContent = "Close attributes filters";
+    platformsToggle.textContent = "Filter by streaming platforms";
+}
+
+function openPlatformsPanel() {
+    platformsPanel.classList.remove("closed");
+    platformsPanel.classList.add("open");
+
+    attributesPanel.classList.remove("open");
+    attributesPanel.classList.add("closed");
+
+    platformsToggle.textContent = "Close platforms filters";
+    attributesToggle.textContent = "Filter by attributes";
+}
+
+function closeBothPanels() {
+    attributesPanel.classList.remove("open");
+    attributesPanel.classList.add("closed");
+
+    platformsPanel.classList.remove("open");
+    platformsPanel.classList.add("closed");
+
+    attributesToggle.textContent = "Filter by attributes";
+    platformsToggle.textContent = "Filter by streaming platforms";
+}
+
+attributesToggle.addEventListener("click", () => {
+    const isOpen = attributesPanel.classList.contains("open");
+    if (isOpen) {
+        closeBothPanels();
+    } else {
+        openAttributesPanel();
+    }
+});
+
+platformsToggle.addEventListener("click", () => {
+    const isOpen = platformsPanel.classList.contains("open");
+    if (isOpen) {
+        closeBothPanels();
+    } else {
+        openPlatformsPanel();
+    }
+});
+
+
+/* ========= COUNT UPDATING ========= */
+
+function updateCount() {
+    const shown = rows.filter(r => r.style.display !== "none").length;
+    visibleTop.textContent = shown;
+    visibleBottom.textContent = shown;
+}
+
+
+/* ========= AVAILABILITY HELPERS ========= */
+
+function getFilmAvailability(row, region) {
+    const attrName = "data-platforms-" + region;
+    const raw = row.getAttribute(attrName) || "";
+    const providers = raw
+        .split(",")
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+    return {
+        available: providers.length > 0,
+        providers: providers
+    };
+}
+
+function getFilterState() {
+    const sna = {};
+    const selectedPlatformPairs = [];  // global list of {region, platform}
+
+    regions.forEach(region => {
+        const snaCb = document.querySelector(`.sna-toggle[data-region="${region}"]`);
+        sna[region] = snaCb ? snaCb.checked : false;
+
+        if (sna[region]) {
+            return; // skip platforms in SNA regions
+        }
+        document
+            .querySelectorAll(`.platform-filter[data-region="${region}"]`)
+            .forEach(cb => {
+                if (cb.checked) {
+                    selectedPlatformPairs.push({ region: region, platform: cb.value });
+                }
+            });
+    });
+
+    return { sna, selectedPlatformPairs };
+}
+
+
+/* ========= ERROR MESSAGE HELPERS ========= */
+
+function setError(element, message) {
+    if (!element) return;
+    if (message) {
+        element.textContent = message;
+        element.classList.add("visible");
+    } else {
+        element.textContent = "";
+        element.classList.remove("visible");
+    }
+}
+
+function parseYearFilters() {
+    const rawMin = yearMinInput.value.trim();
+    const rawMax = yearMaxInput.value.trim();
+
+    if (!rawMin && !rawMax) {
+        setError(yearError, "");
+        return { valid: true, min: null, max: null };
+    }
+
+    let min = null, max = null;
+    const yearPattern = /^[0-9]{4}$/;
+
+    if (rawMin) {
+        if (!yearPattern.test(rawMin)) {
+            setError(yearError, "Enter a valid year (e.g. 1999).");
+            return { valid: false, min: null, max: null };
+        }
+        min = parseInt(rawMin, 10);
+        if (min < 1880 || min > 2100) {
+            setError(yearError, "Enter a year between 1880 and 2100.");
+            return { valid: false, min: null, max: null };
+        }
+    }
+
+    if (rawMax) {
+        if (!yearPattern.test(rawMax)) {
+            setError(yearError, "Enter a valid year (e.g. 1999).");
+            return { valid: false, min: null, max: null };
+        }
+        max = parseInt(rawMax, 10);
+        if (max < 1880 || max > 2100) {
+            setError(yearError, "Enter a year between 1880 and 2100.");
+            return { valid: false, min: null, max: null };
+        }
+    }
+
+    if (min !== null && max !== null && max < min) {
+        setError(yearError, "\"Released before\" year must be at least equal to \"Released after\" year.");
+        return { valid: false, min, max };
+    }
+
+    setError(yearError, "");
+    return { valid: true, min, max };
+}
+
+function parseScoreFilters() {
+    const rawMin = scoreMinInput.value.trim();
+    const rawMax = scoreMaxInput.value.trim();
+
+    if (!rawMin && !rawMax) {
+        setError(scoreError, "");
+        return { valid: true, min: null, max: null };
+    }
+
+    let min = null, max = null;
+
+    function parseScore(str) {
+        const val = Number(str);
+        if (Number.isNaN(val)) return null;
+        return val;
+    }
+
+    if (rawMin) {
+        const val = parseScore(rawMin);
+        if (val === null || val < 0 || val > 10) {
+            setError(scoreError, "Enter a score between 0.0 and 10.0.");
+            return { valid: false, min: null, max: null };
+        }
+        min = val;
+    }
+
+    if (rawMax) {
+        const val = parseScore(rawMax);
+        if (val === null || val < 0 || val > 10) {
+            setError(scoreError, "Enter a score between 0.0 and 10.0.");
+            return { valid: false, min: null, max: null };
+        }
+        max = val;
+    }
+
+    if (min !== null && max !== null && max < min) {
+        setError(scoreError, "\"Max score\" must be at least equal to \"Min score\".");
+        return { valid: false, min, max };
+    }
+
+    setError(scoreError, "");
+    return { valid: true, min, max };
+}
+
+function parseRuntimeFilters() {
+    const rawMin = runtimeMinInput.value.trim();
+    const rawMax = runtimeMaxInput.value.trim();
+
+    if (!rawMin && !rawMax) {
+        setError(runtimeError, "");
+        return { valid: true, min: null, max: null };
+    }
+
+    let min = null, max = null;
+
+    function parseRun(str) {
+        const val = Number(str);
+        if (!Number.isInteger(val)) return null;
+        return val;
+    }
+
+    if (rawMin) {
+        const val = parseRun(rawMin);
+        if (val === null || val < 1 || val > 52000) {
+            setError(runtimeError, "Enter a runtime between 1 and 52000 minutes.");
+            return { valid: false, min: null, max: null };
+        }
+        min = val;
+    }
+
+    if (rawMax) {
+        const val = parseRun(rawMax);
+        if (val === null || val < 1 || val > 52000) {
+            setError(runtimeError, "Enter a runtime between 1 and 52000 minutes.");
+            return { valid: false, min: null, max: null };
+        }
+        max = val;
+    }
+
+    if (min !== null && max !== null && max < min) {
+        setError(runtimeError, "\"Max runtime\" must be at least equal to \"Min runtime\".");
+        return { valid: false, min, max };
+    }
+
+    setError(runtimeError, "");
+    return { valid: true, min, max };
+}
+
+
+/* ========= REGION SNA STATE (GREY OUT) ========= */
+
+function updateRegionSNAState(region) {
+    const sna = document.querySelector(`.sna-toggle[data-region="${region}"]`);
+    const regionDiv = document.querySelector(`.filter-region[data-region="${region}"]`);
+    const platformCbs = Array.from(document.querySelectorAll(`.platform-filter[data-region="${region}"]`));
+
+    if (!sna || !regionDiv) return;
+
+    if (sna.checked) {
+        regionDiv.classList.add("sna-active");
+        platformCbs.forEach(cb => {
+            cb.disabled = true;
+        });
+    } else {
+        regionDiv.classList.remove("sna-active");
+        platformCbs.forEach(cb => {
+            cb.disabled = false;
+        });
+    }
+}
+
+
+/* ========= FILTER LOGIC ========= */
+
+function applyFilters() {
+    // Parse numeric filters first; if invalid, hide all rows.
+    const yearFilters = parseYearFilters();
+    const scoreFilters = parseScoreFilters();
+    const runtimeFilters = parseRuntimeFilters();
+
+    if (!yearFilters.valid || !scoreFilters.valid || !runtimeFilters.valid) {
+        rows.forEach(row => (row.style.display = "none"));
+        updateCount();
+        return;
+    }
+
+    const selectedTypes = typeCheckboxes
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    const selectedGenres = genreCheckboxes
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    const { sna, selectedPlatformPairs } = getFilterState();
+
+    rows.forEach(row => {
+        let show = true;
+
+        // TYPE: only restrict if there are any selected types
+        const rowType = row.dataset.type;
+        if (selectedTypes.length > 0 && !selectedTypes.includes(rowType)) {
+            show = false;
+        }
+
+        // YEAR
+        const rowYear = parseInt(row.dataset.year);
+        if (show && yearFilters.min !== null && rowYear < yearFilters.min) {
+            show = false;
+        }
+        if (show && yearFilters.max !== null && rowYear > yearFilters.max) {
+            show = false;
+        }
+
+        // GENRES: only restrict if any selected genres
+        const rowGenres = row.dataset.genres ? row.dataset.genres.split(",") : [];
+        if (show && selectedGenres.length > 0) {
+            const intersects = rowGenres.some(g => selectedGenres.includes(g));
+            if (!intersects) {
+                show = false;
+            }
+        }
+
+        // SCORE
+        const rowScore = row.dataset.rating ? parseFloat(row.dataset.rating) : null;
+        if (show && scoreFilters.min !== null && (rowScore === null || rowScore < scoreFilters.min)) {
+            show = false;
+        }
+        if (show && scoreFilters.max !== null && (rowScore === null || rowScore > scoreFilters.max)) {
+            show = false;
+        }
+
+        // RUNTIME
+        const rowRuntime = row.dataset.runtime ? parseInt(row.dataset.runtime) : null;
+        if (show && runtimeFilters.min !== null && (rowRuntime === null || rowRuntime < runtimeFilters.min)) {
+            show = false;
+        }
+        if (show && runtimeFilters.max !== null && (rowRuntime === null || rowRuntime > runtimeFilters.max)) {
+            show = false;
+        }
+
+        if (!show) {
+            row.style.display = "none";
+            return;
+        }
+
+        // PLATFORM & SNA logic
+
+        // 1. Enforce SNA: film must NOT be available in SNA regions
+        for (const region of regions) {
+            if (!sna[region]) continue;
+            const avail = getFilmAvailability(row, region);
+            if (avail.available) {
+                show = false;
+                break;
+            }
+        }
+
+        if (!show) {
+            row.style.display = "none";
+            return;
+        }
+
+        // 2. Non-SNA region logic:
+        const nonSnaRegions = regions.filter(r => !sna[r]);
+
+        if (nonSnaRegions.length > 0) {
+            if (selectedPlatformPairs.length > 0) {
+                // At least one platform globally selected
+                // → film must match at least one selected (region, platform) pair
+                let matchesSelectedPlatform = false;
+
+                for (const region of nonSnaRegions) {
+                    const avail = getFilmAvailability(row, region);
+                    if (!avail.available) continue;
+
+                    for (const p of avail.providers) {
+                        if (selectedPlatformPairs.some(sp => sp.region === region && sp.platform === p)) {
+                            matchesSelectedPlatform = true;
+                            break;
+                        }
+                    }
+                    if (matchesSelectedPlatform) break;
+                }
+
+                if (!matchesSelectedPlatform) {
+                    show = false;
+                }
+            } else {
+                // No platforms selected anywhere:
+                // Film must be available in at least one non-SNA region
+                let availableSomeNonSna = false;
+
+                for (const region of nonSnaRegions) {
+                    const avail = getFilmAvailability(row, region);
+                    if (avail.available) {
+                        availableSomeNonSna = true;
+                        break;
+                    }
+                }
+
+                if (!availableSomeNonSna) {
+                    show = false;
+                }
+            }
+        } else {
+            // All regions are SNA: at this point, show only if film is unavailable in all regions
+            // (already enforced by SNA step above)
+        }
+
+        row.style.display = show ? "" : "none";
+    });
+
+    updateCount();
+}
+
+
+/* ========= SIMPLE GROUP HELPERS ========= */
+
+function setCheckboxes(checkboxes, state) {
+    checkboxes.forEach(cb => {
+        if (!cb.disabled) cb.checked = state;
+    });
+}
+
+/* ========= PER-PLATFORM GLOBAL SELECT / DESELECT ========= */
+/**
+ * substring: string to search for in provider name (case-insensitive)
+ * select: true = select all matching, false = deselect all matching
+ * does not consider provider matches where "channel" is in the name - this excludes things like "Paramount+ Amazon channel", which is not the same as the Paramount+ streaming platform
+ */
+function togglePlatformByName(substring, select) {
+    const sub = substring.toLowerCase();
+
+    if (select) {
+        // For select-all: first untick all SNA boxes and update grey-out state
+        snaCheckboxes.forEach(cb => cb.checked = false);
+        regions.forEach(region => updateRegionSNAState(region));
+    }
+
+    platformCheckboxes.forEach(cb => {
+        const name = (cb.value || "").toLowerCase();
+        const region = cb.dataset.region;
+
+        // NEW universal rule:
+        // must contain substring, but NOT contain the word "channel"
+        if (!name.includes(sub)) return;
+        if (name.includes("channel")) return;
+
+        // For deselect, skip regions with SNA active
+        if (!select) {
+            const sna = document.querySelector(`.sna-toggle[data-region="${region}"]`);
+            if (sna && sna.checked) {
+                return;
+            }
+        }
+
+        if (!cb.disabled) {
+            cb.checked = select;
+        }
+    });
+
+    applyFilters();
+}
+
+
+/* ========= GLOBAL SELECT / CLEAR FILTERS (PER PANEL) ========= */
+
+/* Attributes panel: only type/genre + numeric (on clear) */
+globalSelectAttributesLink.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Tick all attribute checkboxes (types + genres)
+    setCheckboxes(typeCheckboxes, true);
+    setCheckboxes(genreCheckboxes, true);
+
+    // Do NOT touch numeric inputs or any platform/SNA settings
+    applyFilters();
+});
+
+globalClearAttributesLink.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Untick attribute checkboxes
+    setCheckboxes(typeCheckboxes, false);
+    setCheckboxes(genreCheckboxes, false);
+
+    // Clear numeric inputs and errors
+    yearMinInput.value = "";
+    yearMaxInput.value = "";
+    scoreMinInput.value = "";
+    scoreMaxInput.value = "";
+    runtimeMinInput.value = "";
+    runtimeMaxInput.value = "";
+    setError(yearError, "");
+    setError(scoreError, "");
+    setError(runtimeError, "");
+
+    // Do NOT touch platform or SNA checkboxes
+    applyFilters();
+});
+
+/* Platforms panel: only platform/SNA behavior */
+globalSelectPlatformsLink.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Clear all SNA checkboxes and update region state
+    snaCheckboxes.forEach(cb => cb.checked = false);
+    regions.forEach(region => updateRegionSNAState(region));
+
+    // Tick all platform checkboxes
+    setCheckboxes(platformCheckboxes, true);
+
+    // Do NOT touch attribute checkboxes or numeric inputs
+    applyFilters();
+});
+
+globalClearPlatformsLink.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Untick all platform checkboxes
+    setCheckboxes(platformCheckboxes, false);
+
+    // Do NOT touch SNA checkboxes, attributes, or numeric inputs
+    applyFilters();
+});
+
+
+/* ========= SECTION-LEVEL SELECT / DESELECT ========= */
+
+typeSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    setCheckboxes(typeCheckboxes, true);
+    applyFilters();
+});
+
+typeDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    setCheckboxes(typeCheckboxes, false);
+    applyFilters();
+});
+
+genreSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    setCheckboxes(genreCheckboxes, true);
+    applyFilters();
+});
+
+genreDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    setCheckboxes(genreCheckboxes, false);
+    applyFilters();
+});
+
+/* Global platforms select/deselect (all regions) */
+platformsSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    // Turn off all SNA (since we're enabling platforms)
+    snaCheckboxes.forEach(cb => cb.checked = false);
+    regions.forEach(region => updateRegionSNAState(region));
+
+    setCheckboxes(platformCheckboxes, true);
+    applyFilters();
+});
+
+platformsDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    setCheckboxes(platformCheckboxes, false);
+    applyFilters();
+});
+
+/* Region-level select/deselect (per region) */
+regionSelectLinks.forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+        const region = this.dataset.region;
+        const group = platformCheckboxes.filter(cb => cb.dataset.region === region);
+        setCheckboxes(group, true);
+        applyFilters();
+    });
+});
+
+regionDeselectLinks.forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+        const region = this.dataset.region;
+        const group = platformCheckboxes.filter(cb => cb.dataset.region === region);
+        setCheckboxes(group, false);
+        applyFilters();
+    });
+});
+
+/* ========= PER-PLATFORM LINK HANDLERS ========= */
+
+// Netflix
+netflixSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("netflix", true);
+});
+netflixDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("netflix", false);
+});
+
+// Amazon Prime
+amazonSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("amazon prime", true);
+});
+amazonDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("amazon prime", false);
+});
+
+// Disney Plus
+disneySelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("disney plus", true);
+});
+disneyDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("disney plus", false);
+});
+
+// Paramount Plus
+paramountSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("paramount plus", true);
+});
+paramountDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("paramount plus", false);
+});
+
+// MUBI
+mubiSelectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("mubi", true);
+});
+mubiDeselectLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    togglePlatformByName("mubi", false);
+});
+
+
+/* ========= CLEAR LINKS (YEAR / SCORE / RUNTIME) ========= */
+
+clearYearLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    yearMinInput.value = "";
+    yearMaxInput.value = "";
+    setError(yearError, "");
+    applyFilters();
+});
+
+clearScoreLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    scoreMinInput.value = "";
+    scoreMaxInput.value = "";
+    setError(scoreError, "");
+    applyFilters();
+});
+
+clearRuntimeLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    runtimeMinInput.value = "";
+    runtimeMaxInput.value = "";
+    setError(runtimeError, "");
+    applyFilters();
+});
+
+
+/* ========= ATTACH FILTER CHANGE LISTENERS ========= */
+
+[yearMinInput, yearMaxInput].forEach(inp =>
+    inp.addEventListener("input", applyFilters)
+);
+
+[scoreMinInput, scoreMaxInput].forEach(inp =>
+    inp.addEventListener("input", applyFilters)
+);
+
+[runtimeMinInput, runtimeMaxInput].forEach(inp =>
+    inp.addEventListener("input", applyFilters)
+);
+
+typeCheckboxes.forEach(cb =>
+    cb.addEventListener("change", () => {
+        applyFilters();
+    })
+);
+
+genreCheckboxes.forEach(cb =>
+    cb.addEventListener("change", () => {
+        applyFilters();
+    })
+);
+
+platformCheckboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+        applyFilters();
+    });
+});
+
+snaCheckboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+        const region = cb.dataset.region;
+        updateRegionSNAState(region);
+        applyFilters();
+    });
+});
+
+
+/* ========= SORTING ========= */
+
+const originalRowOrder = [...rows]; // for "First Added" sorts
+
+function sortRows() {
+    const mode = sortSelect.value;
+
+    let sorted;
+    if (mode === "added-asc") {
+        sorted = [...originalRowOrder];
+    } else if (mode === "added-desc") {
+        sorted = [...originalRowOrder].reverse();
+    } else {
+        sorted = [...rows].sort((a, b) => {
+            const ya = parseInt(a.dataset.year) || 0;
+            const yb = parseInt(b.dataset.year) || 0;
+            const ra = a.dataset.rating ? parseFloat(a.dataset.rating) : -1;
+            const rb = b.dataset.rating ? parseFloat(b.dataset.rating) : -1;
+            const ta = a.dataset.runtime ? parseInt(a.dataset.runtime) : -1;
+            const tb = b.dataset.runtime ? parseInt(b.dataset.runtime) : -1;
+
+            switch (mode) {
+                case "rating-desc":
+                    return rb - ra;
+                case "rating-asc":
+                    return ra - rb;
+                case "year-desc":
+                    return yb - ya;
+                case "year-asc":
+                    return ya - yb;
+                case "runtime-asc":
+                    return ta - tb;
+                case "runtime-desc":
+                    return tb - ta;
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    sorted.forEach(row => tbody.appendChild(row));
+    applyFilters();
+}
+
+sortSelect.addEventListener("change", sortRows);
+
+
+/* ========= SCROLL TOP / BOTTOM BUTTONS ========= */
+
+function updateScrollButtons() {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+    if (scrollY > 50) {
+        scrollTopBtn.style.display = "block";
+    } else {
+        scrollTopBtn.style.display = "none";
+    }
+
+    if (scrollY >= maxScroll - 50) {
+        scrollBottomBtn.style.display = "none";
+    } else {
+        scrollBottomBtn.style.display = "block";
+    }
+}
+
+window.addEventListener("scroll", updateScrollButtons);
+
+scrollTopBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+scrollBottomBtn.addEventListener("click", () => {
+    window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "smooth"
+    });
+});
+
+
+/* ========= INITIALIZE ========= */
+
+regions.forEach(region => {
+    updateRegionSNAState(region);
+});
+
+updateScrollButtons();
+sortRows();  // sets initial "First Added" order and applies filters
+
+</script>
+
+<p style="text-align:center; color:#777; font-size:0.8rem; margin-top:40px;">
+    This site is not endorsed by, and has no affiliation with, either IMDb or TMDB.
+</p>
+
+</body>
+</html>
