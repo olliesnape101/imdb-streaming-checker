@@ -2,11 +2,11 @@
 
 ## Description
 
-This repo is a web-based application running locally via [Flask](https://flask.palletsprojects.com/en/stable/). Users can upload an IMDb list of films/TV shows, and see streaming platform availability for any user-selected regions. This is ideal for VPN users who wish to see which films and shows are available across different regions, using their subscriptions.
+This repo is a web-based application that runs locally via [Flask](https://flask.palletsprojects.com/en/stable/). Users can upload an IMDb list of films/TV shows, and see streaming platform availability for any user-selected regions. This is ideal for VPN users who wish to see which films and shows are available across different regions, using their subscriptions.
 
 Users can filter by film attributes (e.g. IMDb rating, year, etc), as well as available streaming sites across any selected regions. Streaming platform data is fetched using the [TMDB API](https://developer.themoviedb.org/docs/getting-started).
 
-**Please note:** for large lists, there will be a longer wait time when first fetching, but data is stored locally to prevent re-fetches. If any data is outdated, you'll be prompted if you wish to refresh or simply use stored data.
+**Please note:** for large lists, there will be a long wait time when first fetching, but data is stored locally in `watchlist.db` to prevent re-fetches. If any data is outdated, you'll be prompted if you wish to refresh or simply use stored data.
 
 The regions with available platform data are:
 
@@ -20,6 +20,7 @@ The regions with available platform data are:
 - Italy
 
 ---
+
 ## How to Run
 
 ### Step 0: Clone Repository
