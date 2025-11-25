@@ -126,7 +126,7 @@ Then open the URL shown in your terminal (typically http://127.0.0.1:5000)
 │   │
 │   └── results.html
 │       └─ Displays full streaming availability results with sorting,
-│          filtering, SNA toggles, platform grouping, and JS logic.
+│          filtering, platform grouping, and JS logic.
 │
 ├── static/
 │   └── css/
@@ -135,6 +135,5 @@ Then open the URL shown in your terminal (typically http://127.0.0.1:5000)
 │              tables, layout, and responsive formatting.
 │
 └── README.md
-    └─ Documentation for the project, how it works, installation,
-       environment setup, and CS50 video link.
+    └─ This file - documentation and setup for the application.
 ```
