@@ -2,7 +2,7 @@
 
 ## Description
 
-This repo allows users to upload an IMDb list of films/TV show, and see streaming platform availability for any user-selected regions. This is ideal for VPN users who wish to see films that are are available with their subscriptions across different regions.
+This repo is a web-based application running locally via [Flask](https://flask.palletsprojects.com/en/stable/). Users can upload an IMDb list of films/TV shows, and see streaming platform availability for any user-selected regions. This is ideal for VPN users who wish to see which films and shows are available across different regions, using their subscriptions.
 
 Users can filter by film attributes (e.g. IMDb rating, year, etc), as well as available streaming sites across any selected regions. Streaming platform data is fetched using the [TMDB API](https://developer.themoviedb.org/docs/getting-started).
 
